@@ -80,6 +80,22 @@ int main(int argc, char* argv[]) {
     std::cout << "Client connected\n";
     close(client_fd);
 
+    // ---- Kafka response ----
+    // message_size (4 bytes) + header: correlation_id (4 bytes)
+    int32_t message_size_ = htonl(0);
+    int32_t header_correlation_id_ = htonl(7);
+    
+    char response[8];
+    std::memcpy(response, &message_size_, 4);
+    std::memcpy(response + 4, &header_correlation_id_, 4);
+
+    ssize_t sent = send(client_fd, &response, sizeof(response), 0);
+
+    if(sent != sizeof(response)){
+        std::cerr << "Failed to send response\n";
+    }
+
+
     close(server_fd);
     return 0;
 }
