@@ -78,7 +78,7 @@ int main(int argc, char* argv[]) {
     
     int client_fd = accept(server_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &client_addr_len);
     std::cout << "Client connected\n";
-    close(client_fd);
+    
 
     // ---- Kafka response ----
     // message_size (4 bytes) + header: correlation_id (4 bytes)
@@ -96,6 +96,7 @@ int main(int argc, char* argv[]) {
     }
 
 
+    close(client_fd);
     close(server_fd);
     return 0;
 }
