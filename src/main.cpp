@@ -78,23 +78,51 @@ int main(int argc, char* argv[]) {
     
     int client_fd = accept(server_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &client_addr_len);
     std::cout << "Client connected\n";
-    
+
+    // --- Kafka request ----
+    // message_size (4) + header: `request_api_key` (2 bytes) + `request_api_key` (2 bytes) + `correlation_id` (4 bytes)
+    int32_t request_message_size_ = htonl(0);
+
+    std::string received_data;
+    std::vector<char> buffer(4096);
+    int bytes_read;
+
+    // read until connection-close (bytes-read == 0)
+    while ((bytes_read = ::recv(server_fd, buffer.data(), buffer.size(), 0)) > 0) {
+        received_data.append(buffer.data(), bytes_read);
+    }
+
+    if(bytes_read == -1){
+        // An error occurred during reading (e.g., connection reset)
+        std::cerr << "Error receiving data: " << strerror(errno) << std::endl;
+        return;
+    }
+
+    std::cout << "Received full request: " << received_data << std::endl;
+
+    int16_t request_api_key_ = 0;
+    int16_t request_api_version = 0;
+    int32_t correlation_id = 0;
+
+    std:memcpy(&request_api_key_, &received_data, 2);
+    std:memcpy(&request_api_version, &received_data + 2, 2);
+    std:memcpy(&correlation_id, &received_data + 4, 4);
+
+    std::cout << "correlation_id: " << correlation_id << std::endl;
 
     // ---- Kafka response ----
     // message_size (4 bytes) + header: correlation_id (4 bytes)
     int32_t message_size_ = htonl(0);
-    int32_t header_correlation_id_ = htonl(7);
     
     char response[8];
     std::memcpy(response, &message_size_, 4);
-    std::memcpy(response + 4, &header_correlation_id_, 4);
+    std::memcpy(response + 4, &correlation_id, 4);
 
     ssize_t sent = send(client_fd, &response, sizeof(response), 0);
 
     if(sent != sizeof(response)){
         std::cerr << "Failed to send response\n";
     }
-
 
     close(client_fd);
     close(server_fd);
