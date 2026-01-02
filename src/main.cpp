@@ -94,14 +94,22 @@ int main(int argc, char* argv[]) {
 
     // ---- Kafka response ----
     // message_size (4 bytes) + header: correlation_id (4 bytes)
-    int32_t message_size_ = htonl(0);
+    int32_t message_size_ = *(u_int32_t*)(buffer);
+    int16_t request_api_key = *(u_int16_t*) (buffer + 4);
+    int16_t request_api_version = *(u_int16_t*) (buffer + 6);
     int32_t correlation_id_n_ = *(u_int32_t*)(buffer + 8);
 
-    std::cout << "correlation_id: " << ntohl( correlation_id_n_ )<< std::endl;
+    std::cout << "request_api_key: " << ntohs(request_api_key) << std::endl;
+    std::cout << "request_api_version: " << ntohs(request_api_version) << std::endl;
+
+    std::cout << "correlation_id: " << ntohl( correlation_id_n_ ) << std::endl;
     
-    char response[8];
+    int16_t response_error_code_ = htons(35);
+
+    char response[10];
     std::memcpy(response, &message_size_, 4);
     std::memcpy(response + 4, &correlation_id_n_, 4);
+    std::memcpy(response + 8, &response_error_code_, 2);
 
     // Respond to client fd.
     ssize_t sent = send(client_fd, &response, sizeof(response), 0);
