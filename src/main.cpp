@@ -13,6 +13,7 @@ int main(int argc, char* argv[]) {
     std::cout << std::unitbuf;
     std::cerr << std::unitbuf;
 
+    // Creating the Server Socket
     int server_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (server_fd < 0) {
         std::cerr << "Failed to create server socket: " << std::endl;
@@ -35,6 +36,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
+    // Defining Server Address
     struct sockaddr_in server_addr{};
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = INADDR_ANY;
@@ -71,11 +73,13 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Waiting for a client to connect...\n";
 
+    // Defining client address holder, we did not defined any criteria for client connection for now.
     struct sockaddr_in client_addr{};
     socklen_t client_addr_len = sizeof(client_addr);
 
     std::cerr << "Logs from your program will appear here!\n";
     
+    // Accept Client Connection, we will respond with a fd, that can be used to send data to server fd.
     int client_fd = accept(server_fd, reinterpret_cast<struct sockaddr*>(&client_addr), &client_addr_len);
     std::cout << "Client connected\n";
 
@@ -85,7 +89,7 @@ int main(int argc, char* argv[]) {
 
     char buffer[4096];
 
-    // read until connection-close (bytes-read == 0)
+    // Receive Data from Client
     ::read(client_fd, buffer, sizeof(buffer));
 
     // ---- Kafka response ----
@@ -99,6 +103,7 @@ int main(int argc, char* argv[]) {
     std::memcpy(response, &message_size_, 4);
     std::memcpy(response + 4, &correlation_id_n_, 4);
 
+    // Respond to client fd.
     ssize_t sent = send(client_fd, &response, sizeof(response), 0);
 
     if(sent != sizeof(response)){
